@@ -1,20 +1,20 @@
 from mysql.connector import MySQLConnection
 import logging
-from config import settings
+import os
 from typing import Optional
 
 
 class Database:
     def __init__(self):
-        self.settings = settings
+        self.settings = os.environ
 
     def _connect(self):
         return MySQLConnection(
-            database=self.settings.db_name,
-            user=self.settings.db_user,
-            password=self.settings.db_password,
-            host=self.settings.db_host,
-            port=self.settings.db_port,
+            database=self.settings.get("db_name"),
+            user=self.settings.get("db_user"),
+            password=self.settings.get("db_password"),
+            host=self.settings.get("db_host"),
+            port=self.settings.get("db_port")
         )
 
     def create_user(self, name: str, email: str, password_hash: str):

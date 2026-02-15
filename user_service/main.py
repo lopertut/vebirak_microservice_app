@@ -1,10 +1,8 @@
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from db import Database
-from models import UserCreate, UserLogin, UserOut, LogoutRequest
 import hashlib
 import os
-from config import settings
 import uvicorn
 
 
@@ -37,14 +35,13 @@ def _verify_password(stored: str, password: str) -> bool:
 
 
 @app.post("/register")
-def register(payload: UserCreate):
-    existing = db.get_user_by_username(payload.username)
-    print("test")
+def register(username: str, password: str, email: str):
+    existing = db.get_user_by_username(username)
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This username already used")
     
-    password = _hash_password(payload.password)
-    created = db.create_user(payload.username, payload.email, password)
+    hash_password = _hash_password(password)
+    created = db.create_user(username, email, hash_password)
 
     if not created:
         raise HTTPException(status_code=500, detail="Failed to create account. Please try again later")
@@ -52,13 +49,13 @@ def register(payload: UserCreate):
     return {"ok": True}
 
 
-@app.post("/login", response_model=UserOut)
-def login(payload: UserLogin):
-    user = db.get_user_by_username(payload.login)
+@app.post("/login")
+def login(username: str, password: str):
+    user = db.get_user_by_username(username)
     
     if not user or "password" not in user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid login or password")
-    if not _verify_password(user["password"], payload.password):
+    if not _verify_password(user["password"], password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid login or password")
 
     # remove password_hash for response
@@ -67,18 +64,16 @@ def login(payload: UserLogin):
 
 
 @app.post("/logout")
-def logout(request: LogoutRequest):
-    user_id = request.user_id
+def logout(user_id: int):
     try:
-        user_id_int = int(user_id)
-        print(f"Logout user_id: {user_id_int}, type: {type(user_id_int)}")
+        print(f"Logout user_id: {user_id}, type: {type(user_id)}")
         return {"message": "Logged out"}
     except Exception as e:
         print(f"Logout error: {e}")
         raise
 
 
-@app.get("/profile", response_model=UserOut)
+@app.get("/profile")
 def profile(user_id: int):
     user = db.get_user_by_id(user_id)
     if not user:
@@ -88,5 +83,5 @@ def profile(user_id: int):
 
 if __name__ == "__main__":
     uvicorn.run(
-        "main:app", host=settings.fastapi_host, port=settings.fastapi_port, reload=True, log_level="debug"
+            "main:app", host=os.environ.get("fastapi_host"), port=os.environ.get("fastapi_port"), reload=True, log_level="debug"
     )

@@ -16,7 +16,7 @@ def send_message(sender_id: int, receiver_id: int, text: str):
 
 @app.get("/read_messages")
 def read_messages(user1_id: int, user2_id: int):
-    return db.read_messages(user1_id, user2_id)
+    db.read_messages(user1_id, user2_id)
 
 
 @app.post("/set_online")

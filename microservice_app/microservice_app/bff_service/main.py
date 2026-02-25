@@ -3,7 +3,7 @@ from typing import Optional
 import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import jwt
+from fastapi.responses import JSONResponse
 import uvicorn
 from dotenv import load_dotenv
 
@@ -23,11 +23,6 @@ app.add_middleware(
 USER_SERVICE = os.environ.get("user_service")
 CHAT_SERVICE = os.environ.get("chat_service")
 DOC_SERVICE = os.environ.get("doc_service")
-
-
-def id_from_jwt(encoded_jwt: str) -> int:
-    decoded_jwt = jwt.decode(encoded_jwt, "secret", algorithms="HS256")
-    return decoded_jwt["user_id"]
 
 
 @app.post("/login")
@@ -58,35 +53,28 @@ def get_doc(doc_id):
 
 
 @app.post("/send_message")
-def send_message(user_token: str, receiver_id: int, text: str):
-    sender_id = id_from_jwt(user_token)
-    response = requests.post(f"{CHAT_SERVICE}/send_message?sender_id={sender_id}&receiver_id={receiver_id}&text={text}")
-    return response.json()
+def send_message(sender_id: int, receiver_id: int, text: str):
+    requests.post(f"{CHAT_SERVICE}/send_message?sender_id={sender_id}&receiver_id={receiver_id}&text={text}")
 
 
 @app.get("/read_messages")
-def read_messages(user_token: str, user2_id: int):
-    user1_id = id_from_jwt(user_token)
-    response = requests.get(f"{CHAT_SERVICE}/read_messages?user1_id={user1_id}&user2_id={user2_id}")
-    return response.json()
+def read_messages(user1_id: int, user2_id: int):
+    requests.get(f"{CHAT_SERVICE}/read_messages?user1_id={user1_id}&user2_id={user2_id}")
 
 
 @app.post("/set_online")
-def set_online(user_token: str):
-    user_id = id_from_jwt(user_token)
+def set_online(user_id: int):
     requests.post(f"{CHAT_SERVICE}/set_online?user_id={user_id}")
 
 
 @app.post("/logout")
-def logout(user_token: str):
-    user_id = id_from_jwt(user_token)
+def logout(user_id: int):
     response = requests.post(f"{CHAT_SERVICE}/set_offline?user_id={user_id}")
     return response.json()
 
 
 @app.get("/is_online")
-def is_online(user_token: str):
-    user_id = id_from_jwt(user_token)
+def is_online(user_id: int):
     response = requests.get(f"{CHAT_SERVICE}/is_online?user_id={user_id}")
     return response.json()
 

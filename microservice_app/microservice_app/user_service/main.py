@@ -5,7 +5,6 @@ import hashlib
 import os
 import uvicorn
 import requests
-import jwt
 from dotenv import load_dotenv
 
 
@@ -61,11 +60,19 @@ def login(username: str, password: str):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid login or password")
     if not _verify_password(user["password"], password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid login or password")
-    
-    encoded_jwt = jwt.encode({"user_id": user["id"]}, "secret", algorithm="HS256")
 
+    # remove password_hash for response
     requests.post(f"{os.environ.get("chat_service")}/set_online?user_id={user["id"]}")
-    return {"status": "success", "jwt": encoded_jwt}
+    return {"status": "success", "user_id": user["id"]}
+
+
+# @app.post("/logout")
+# def logout(user_id: int):
+#     try:
+#         print(f"Logout user_id: {user_id}, type: {type(user_id)}")
+#         return {"message": "Logged out"}
+#     except Exception as e:
+#         raise
 
 
 @app.get("/profile")

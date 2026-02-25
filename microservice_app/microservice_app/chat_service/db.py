@@ -20,29 +20,15 @@ def create_chat(user1_id: int, user2_id: int):
 
 def send_message(sender_id, receiver_id, text):
     stream_name = get_chat_id(sender_id, receiver_id)
+
     r.xadd(stream_name, {"sender": sender_id, "message": text})
 
+    print("Message sent")
 
-def read_messages(user1_id: int, user2_id: int):
+
+def read_messages(user1_id: int, user2_id: int, last_id="0"):
     stream_name = get_chat_id(user1_id, user2_id)
-    last_id = r.get(f"last_read:{stream_name}:{user1_id}")
-
-    if not last_id:
-        last_id = "0"
-
-    print(last_id)
-
-    raw_messages = r.xread({stream_name: last_id}, block=5000, count=10)
-    messages = []
-
-    if not raw_messages:
-        return []
-
-    for message in raw_messages[0][1]:
-        messages.append(message[1]["message"])
-        last_message_id = message[0]
-        r.set(f"last_read:{stream_name}:{user1_id}", last_message_id)
-
+    messages = r.xread({stream_name: last_id}, block=5000, count=10)
     return messages
 
 
